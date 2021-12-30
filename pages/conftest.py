@@ -1,13 +1,15 @@
 from selenium import webdriver
+# from seleniumwire import webdriver
 from tech_files.ways import BROWSER_PATH
 import time,random,json,pickle
-from selenium.common.exceptions import InvalidCookieDomainException
+from selenium.common.exceptions import InvalidCookieDomainException,WebDriverException,NoSuchWindowException
 from pathlib import Path
 
 class Bot:
-    def __init__(self,new_profile=False):
+    def __init__(self,new_profile=False,profile_folder=r'D://crypto//done'):
         self.new_profile = new_profile
-    #     DB.__init__(self)
+        self.profile_folder = profile_folder
+
     def get_dicord_acc(self,data):
         self.discord_email = data.split(':')[0]
         self.discord_pass = data.split(':')[1]
@@ -17,18 +19,22 @@ class Bot:
         print(f'Взял данные:\n{self.discord_email},{self.discord_pass},{self.email},{self.email_pass}')
 
     def save_useragent(self):
-        profile_path = rf'D://crypto//chrome_profile//{self.email}//useragent.txt'
+        # profile_path = rf'D://crypto//chrome_profile//{self.email}//useragent.txt'
+        # profile_path = rf'D://crypto//zakaz//{self.email}//useragent.txt'
+
         with open(profile_path, 'w') as ua_file:
             ua_file.write(self.user_agent)
 
     def save_info(self):
-        profile_path = rf'D://crypto//chrome_profile//{self.email}//info.txt'
+        # profile_path = rf'D://crypto//chrome_profile//{self.email}//info.txt'
+        profile_path = rf'D://crypto//zakaz//{self.email}//info.txt'
+
         data = f'{self.discord_email},{self.discord_pass},{self.email},{self.email_pass},{self.secret}\n'
         with open(profile_path, 'w') as ua_file:
             ua_file.write(data)
 
-        filename = r'D:\документы\planet\accs.txt'
-        data = f'{self.email},{self.email_pass},{self.secret}\n'
+        filename = r'D:\документы\planet\accs_zakaz.txt'
+        data = f'{self.email_pass},{self.secret}\n'
         with open(filename, "a") as file:
             file.write(data)
 
@@ -47,6 +53,7 @@ class Bot:
                 self.user_agent = ua_file.read()
         else:
             self.random_ua()
+
     def find_data(self):
         profile_path = rf'D://crypto//chrome_profile//{self.email}//info.txt'
         # profile_path = rf'D://crypto//wallet//{self.email}//info.txt'
@@ -71,16 +78,17 @@ class Bot:
         return False
 
     def replace_profile_folder(self,new_folder=r'D:\crypto\done'):
-        profile_path = Path(rf'D://crypto//chrome_profile//{self.email}')
+        profile_path = Path(rf'D://crypto//done//{self.email}')
         # profile_path = Path(rf'D://crypto//wallet//{self.email}')
         profile_path.replace(Path(new_folder).joinpath(profile_path.parts[-1]))
 
     def get_old_profile(self):
-        profile_path = Path(rf'D://crypto//chrome_profile')
+        profile_path = Path(rf'D://crypto//done')
         # profile_path = Path(rf'D://crypto//wallet')
 
         self.email = sorted(Path(profile_path).iterdir(), key=lambda f: f.stat().st_mtime)[0].parts[-1]
         print('Взял профиль: ', self.email)
+
     def browser(self):
         print("\nstart chrome browser for test..")
 
@@ -102,8 +110,12 @@ class Bot:
         options.add_experimental_option("excludeSwitches", ["enable-automation","enable-logging"])
         options.add_experimental_option('useAutomationExtension', False)
         options.add_argument(f"user-agent={self.user_agent}")
+        options.add_argument("--window-size=300,650")
+
         # options.add_argument(f"--proxy-server=socks5://{self.proxy['ip']}:{self.proxy['socks_auth_port']}")
         # options.add_argument(f"--proxy-server=socks5://2.56.139.3:63495")
+        # options.add_argument(f"--proxy-server=socks5://81.16.140.172:52112")
+
         preferences = {
             "webrtc.ip_handling_policy": "disable_non_proxied_udp",
             "webrtc.multiple_routes_enabled": False,
@@ -115,18 +127,21 @@ class Bot:
 
         # prefs = {"protocol_handler": {"excluded_schemes": {"<INSERT PROTOCOL NAME>": "false"}}}
         # options.add_experimental_option("prefs", prefs)
-        options.add_experimental_option("prefs", preferences)
 
 
         # options.add_argument("window-size=960,1080")
         if self.new_profile is True:
-            options.add_argument(f"user-data-dir=D://crypto//chrome_profile//{self.email}")
-        options.add_extension(r'files\anticaptcha-plugin_v0.60.crx')
+            # options.add_argument(f"user-data-dir=D://crypto//chrome_profile//{self.email}")
+            # options.add_argument(f"user-data-dir=D://crypto//ready_lions//{self.email}")
+            options.add_argument(f"user-data-dir={Path(self.profile_folder).joinpath(self.email)}")
+            # options.add_argument(f"user-data-dir=D://crypto//zakaz//{self.email}")
+        # options.add_extension(r'files\anticaptcha-plugin_v0.60.crx')
         options.add_extension(r'files\metamask.crx')
         # options.add_extension(r'files\Phantom.crx')
         # options.add_extension(r'files\FoxyProxy.crx')
-
         self.browser = webdriver.Chrome(executable_path=BROWSER_PATH.CHROME_DRIVER_BINARY, options=options)
+        # except WebDriverException:
+        #     return self.browser()
         self.browser.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
                   const newProto = navigator.__proto__
@@ -134,9 +149,12 @@ class Bot:
                   navigator.__proto__ = newProto
                   """
         })
+        self.browser.set_window_size(1024, 1024)
         # self.save_useragent()
         self.send_captcha_key()
-        self.browser.set_window_size(1080, 1080)
+        # self.browser.set_window_size(1024, 1024)
+
+        # self.browser.set_window_size(300, 650)
 
         # self.browser.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         #     "source": """

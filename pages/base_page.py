@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import string,time
 import spintax
-
+from selenium.webdriver.common.action_chains import ActionChains
 import random
 with open(r'files/useragents.txt','r') as file:
     ua_list = file.read().split('\n')
@@ -21,6 +21,7 @@ class BasePage(Bot):
         except(NoSuchElementException):
             return False
         return True
+
 
     def wait_for_window_with_title(self,title,timeout=10):
         for i in range(timeout):
@@ -91,6 +92,9 @@ class BasePage(Bot):
         except(NoSuchElementException):
             return False
         return True
+
+    def click_by_actions(self,el,x,y):
+        return ActionChains(self.browser).move_to_element(el).move_by_offset(x,y).click().perform()
 
     def switch_to_window(self,title):
             tabs = self.browser.window_handles

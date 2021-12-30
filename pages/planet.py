@@ -43,7 +43,7 @@ class GameLocs:
 
 
 # ref_link = 'https://planetquest.io/join/referral/0d99778cb5ffc1fcc00c5c88c04941c09d9725e7d38e7f900d48938013262972'
-ref_link = 'https://planetquest.io/join/referral/5a46d1e5331609a66d3b2833a435fff751faf7e3971a5fadaafdca999a810eeb'
+ref_link = 'https://planetquest.io/join/referral/bf91164a5dd4bf874605a257419f6b8d860318e93fcabe1c9116a514be62f23f'
 
 class PlanetQuest(BasePage):
     def go_reflink(self):
@@ -182,6 +182,7 @@ class PlanetQuest(BasePage):
             time.sleep(3)
 
     def connect_discord2(self):
+
         assert self.wait_and_click(*GameLocs.link_discord)
         self.switch_to_window_by_domain('discord.com')
         time.sleep(2)

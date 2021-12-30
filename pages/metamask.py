@@ -1,8 +1,10 @@
 from selenium.webdriver.common.by import By
 import time
 from pages.base_page import BasePage
+from selenium.common.exceptions import InvalidCookieDomainException,WebDriverException,NoSuchWindowException
 
-main_wallet = '0xBA8942587ad69019e26c001E8c8C1b1409ec6f32'
+# main_wallet = '0xBA8942587ad69019e26c001E8c8C1b1409ec6f32'
+main_wallet = '0x20F579530cFC59C31fdd3a5E77539Cb92656ab55'
 
 class Locators:
     start_work_button = (By.CSS_SELECTOR,'button[class*=first-time-flow__button]')
@@ -103,22 +105,29 @@ class MetaMask(BasePage):
         self.click_element(*Locators.close_popup)
 
 
-    def bypass_metamask_window(self,connect=True):
-        self.wait_fot_window_with_domain(Locators.connect_name)
-        if connect is True:
-            self.wait_and_click(*Locators.next_step)
-            self.wait_and_click(*Locators.connect_button)
-        else:
-            self.wait_and_click(*Locators.next_step)
-        self.wait_for_current_window_disappear(10)
-
+    def bypass_metamask_window(self,connect=True,token=False):
+        try:
+            self.wait_fot_window_with_domain(Locators.connect_name)
+            if connect is True:
+                self.wait_and_click(*Locators.next_step)
+                self.wait_and_click(*Locators.connect_button)
+            else:
+                self.wait_and_click(*Locators.next_step)
+            if token is True:
+                time.sleep(2)
+                self.wait_fot_window_with_domain(Locators.connect_name)
+                self.wait_and_click(*Locators.next_step)
+            self.wait_for_current_window_disappear(10)
+        except NoSuchWindowException:
+            self.switch_to_main()
     def login_by_password(self):
         self.go_metamask()
         self.wait_for_element(*Locators.password_input)
         self.send_keys_element(*Locators.password_input,self.email_pass)
+        time.sleep(1)
         self.click_element(*Locators.unblock_button)
         assert self.wait_for_element_disappear(*Locators.unblock_button,20)
-
+        time.sleep(5)
     def go_tokentrove(self):
         url = 'https://tokentrove.com'
         self.browser.get(url)
@@ -165,6 +174,80 @@ class MetaMask(BasePage):
         self.wait_and_click(*checkbox)
         self.wait_and_click(*set_up)
 
+    def import_wallet(self,secret,password):
+        self.go_metamask()
+        assert self.wait_and_click(*Locators.start_work_button)
+        import_but = (By.XPATH, "//button[text()='Импортировать кошелек']")
+        self.wait_and_click(*import_but)
+        agree = (By.XPATH, "//button[text()='Я согласен']")
+        self.wait_and_click(*agree)
+        # assert self.wait_for_element(*secret_inpit)
+        time.sleep(3)
+        secret_inpit = (By.XPATH, "//input")
+        self.send_keys_element(*secret_inpit,secret)
+        # self.click_element(*Locators.radio_button)
+        password1 = (By.ID, 'password' )
+        password2 = (By.ID, 'confirm-password')
+        self.send_keys_element(*password1,password)
+        time.sleep(1)
+        self.send_keys_element(*password2,password)
+
+        check_box1 = (By.CSS_SELECTOR,'div[class="first-time-flow__checkbox first-time-flow__terms"]')
+        self.click_element(*check_box1)
+        time.sleep(1)
+        do_import = (By.XPATH, "//button[text()='Импорт']")
+        self.click_element(*do_import)
+        time.sleep(10)
+        self.wait_and_click(*Locators.next_button)
+
+    def network(self,type='BNB'):
+        if type=='BNB':
+            name = 'Binance Smart Chain Mainnet'
+            url = 'https://bsc-dataseed1.ninicoin.io'
+            id = '56'
+            symbol = 'BNB'
+            site = 'https://bscscan.com/'
+        if type == 'MATIC':
+            name = 'Polygon Mainnet'
+            url = 'https://polygon-rpc.com/'
+            id = '137'
+            symbol = 'MATIC'
+            site = 'https://polygonscan.com/'
+
+        self.browser.get('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#settings/networks')
+        time.sleep(1)
+        send = (By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[1]/div/button')
+        send1 = (
+        By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/label/input')
+        send2 = (
+        By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[2]/label/input')
+        send3 = (
+        By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[3]/label/input')
+        send4 = (
+        By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[4]/label/input')
+        send5 = (
+        By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[5]/label/input')
+        self.click_element(*send)
+        self.send_keys_element(*send1, name)
+        self.send_keys_element(*send2, url)
+        self.send_keys_element(*send3, id)
+        self.send_keys_element(*send4, symbol)
+        self.send_keys_element(*send5, site)
+        send66 = (By.XPATH, '')
+        send6 = (By.XPATH, '//*[@id="app-content"]/div/div[3]/div/div[2]/div[2]/div/div[2]/div/div[3]/button[2]')
+        self.click_element(*send6)
+        time.sleep(5)
+
+    def add_token(self,contract='0xdf9B4b57865B403e08c85568442f95c26b7896b0'):
+        self.browser.get('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#import-token')
+        input = (By.CSS_SELECTOR, '#custom-address')
+        self.send_keys_element(*input,contract)
+        add_token = (By.XPATH, "//button[contains(text(),'Add Custom Token')]")
+        self.wait_and_click(*add_token)
+        import_token = (By.XPATH, "//button[contains(text(),'Import')]")
+        self.wait_and_click(*import_token)
+
+
     def connect_wallet_2(self):
         connect_wallet = (By.CSS_SELECTOR, "div[class='_lyduxj']")
         self.wait_and_click(*connect_wallet)
@@ -196,22 +279,25 @@ class MetaMask(BasePage):
         return True if not self.should_be_item() else False
 
     def get_wallet(self):
-        pass
-        # bot.login_by_password()
-        # ok = (By.XPATH, "//button[text()='Понятно']")
-        # bot.wait_and_click(*ok)
-        # title = (By.XPATH, "//button[@title='Опции счета']")
-        # bot.wait_and_click(*title)
-        # wallet = (By.XPATH, "//span[text()='Реквизиты счета']")
-        # bot.wait_and_click(*wallet)
-        # time.sleep(3)
-        # wallet = (By.XPATH, "//div[@class='qr-code__address']")
+        title = (By.XPATH, "//button[@title='Опции счета']")
+        self.wait_and_click(*title)
+        wallet = (By.XPATH, "//span[text()='Реквизиты счета']")
+        self.wait_and_click(*wallet)
+        time.sleep(1)
+        wallet_txt = (By.XPATH, "//div[@class='qr-code__address']")
+        wallet = self.browser.find_element(*wallet_txt).text
+        self.address = wallet
+        # filename = r'C:\crypto\wallet.txt'
+        # data = f'{wallet}\n'
+        # with open(filename, "a") as file:
+        #     file.write(data)
+
         # bot.adress = bot.browser.find_element(*wallet).text
 
 
 class Lions(MetaMask):
-        def go_lions(self):
-            url = 'https://invites.lazylionsnft.com/i/lG5r'
+        def go_lions(self,url):
+            # url = 'https://invites.lazylionsnft.com/i/lG5r'
             self.browser.get(url)
 
         def auth_discord(self):
@@ -220,18 +306,24 @@ class Lions(MetaMask):
             time.sleep(2)
             auth_disc = (By.XPATH, "//div[text()='Авторизовать']")
             assert self.wait_and_click(*auth_disc,timeout=30)
+            time.sleep(10)
+            get_invite = (By.XPATH, "//div[text()='Принять приглашение']")
+            get_invite2 = (By.XPATH, "//div[text()='Перейти']")
+            self.click_element(*get_invite)
+            self.click_element(*get_invite2)
             time.sleep(2)
-            get_invite =    (By.XPATH, "//div[text()='Принять приглашение']")
-            assert self.wait_and_click(*get_invite,timeout=30)
-            do_smth = (By.XPATH, "//div[text()='Выполнить']")
-            assert self.wait_for_element(*do_smth,timeout=30)
+            self.click_element(*get_invite)
+            self.click_element(*get_invite2)
+            time.sleep(15)
             popup_close_button = (By.CSS_SELECTOR, 'button[aria-label="Закрыть"]')
             close_download_popup = (By.CSS_SELECTOR, 'div[class*=closeButton]')
             self.click_element(*popup_close_button)
             self.click_element(*close_download_popup)
+            do_smth = (By.XPATH, "//div[text()='Выполнить']")
+            assert self.wait_for_element(*do_smth,timeout=30)
             time.sleep(1)
             assert self.wait_and_click(*do_smth)
-            time.sleep(3)
+            time.sleep(2)
             checkbox = (By.XPATH, "//input[@type='checkbox']")
             self.click_element(*checkbox)
             time.sleep(2)
@@ -240,12 +332,18 @@ class Lions(MetaMask):
 
         def vetify_discord(self):
             verify_button = (By.XPATH, "//div[text()='Verify']")
-            assert self.wait_and_click(*verify_button)
-            time.sleep(5)
-            self.browser.get('https://discord.com/channels/869565356400844820/902184546781519992')
-            wallet_but = (By.XPATH, "//div[text()='I already have a wallet']")
-            assert self.wait_and_click(*wallet_but)
+            if not self.wait_and_click(*verify_button):
+                self.wait_and_click(*verify_button,5)
+                self.wait_and_click(*verify_button,5)
+            time.sleep(2)
+            lion_button = (By.XPATH, "//div[contains(@aria-label,'🦁')]")
+            self.click_element(*lion_button)
+            time.sleep(2)
+            # self.browser.get('https://discord.com/channels/869565356400844820/902184546781519992')
+            # wallet_but = (By.XPATH, "//div[text()='I already have a wallet']")
+            # assert self.wait_and_click(*wallet_but)
             self.browser.get('https://discord.com/channels/869565356400844820/902211447776501871')
+            time.sleep(5)
             enter_but = (By.XPATH, "//div[text()='Enter the Discord']")
             assert self.wait_and_click(*enter_but)
 
@@ -257,12 +355,13 @@ class Lions(MetaMask):
             assert self.wait_and_click(*metamask)
             self.bypass_metamask_window(True)
 
-        def open_pack(self):
-            pack = (By.XPATH, "//div[text()='Open your packs']")
-            self.click_element(*pack)
-            img = (By.XPATH, "//img[@alt='Packs']")
-            self.wait_and_click(*img)
-            time.sleep(5)
+        def open_pack(self,count=1):
+            for _ in range(count):
+                pack = (By.XPATH, "//div[text()='Open your packs']")
+                self.click_element(*pack)
+                img = (By.XPATH, "//img[@alt='Packs']")
+                self.wait_and_click(*img)
+                time.sleep(10)
 # bot.browser.get('https://tokentrove.com')
 
 # for _ in range(3):
